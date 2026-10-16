@@ -1,52 +1,208 @@
-# Rayon in Kotlin
+# rayon-kotlin in Kotlin
 
-[![GitHub link](https://img.shields.io/badge/GitHub-KotlinMania%2Frayon--kotlin-blue.svg)](https://github.com/KotlinMania/rayon-kotlin)
+[![GitHub link](https://img.shields.io/badge/GitHub-KotlinMania%2Frayon-kotlin-blue.svg)](https://github.com/KotlinMania/rayon-kotlin)
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.kotlinmania/rayon-kotlin)](https://central.sonatype.com/artifact/io.github.kotlinmania/rayon-kotlin)
 [![Build status](https://img.shields.io/github/actions/workflow/status/KotlinMania/rayon-kotlin/ci.yml?branch=main)](https://github.com/KotlinMania/rayon-kotlin/actions)
 
-Kotlin Multiplatform line-by-line clean-room port of the Rust crate [`rayon`](https://crates.io/crates/rayon).
+This is a Kotlin Multiplatform line-by-line transliteration port of [`rayon`](https://github.com/rayon-rs/rayon).
 
-> **Status: scaffold — porting has not started.** This repo currently contains build infrastructure only. The upstream Rust source for the `rayon` crate will be cloned into `tmp/` (gitignored) when porting begins.
+**Original Project:** This port is based on [`rayon`](https://github.com/rayon-rs/rayon). All design credit and project intent belong to the upstream authors; this repository is a faithful port to Kotlin Multiplatform with no behavioural changes intended.
 
-## About
+### Porting status
 
-Rust crate `rayon`: data-parallelism library.
+This is an **in-progress port**. The goal is feature parity with the upstream Rust crate while providing a native Kotlin Multiplatform API. Every Kotlin file carries a `// port-lint: source <path>` header naming its upstream Rust counterpart so the AST-distance tool can track provenance.
 
-This port targets functional parity with the upstream Rust crate while presenting an idiomatic Kotlin Multiplatform API. Every Kotlin file is a faithful translation of an upstream Rust file and carries a `// port-lint: source <path>` header so the AST-distance tool can track provenance.
+---
 
-## Supported targets
+## Upstream README — `rayon`
 
-- macOS arm64 / x64
-- Linux x64
-- Windows mingw-x64
-- iOS arm64 / x64 / simulator-arm64
-- JS (browser + Node.js)
-- Wasm-JS (browser + Node.js)
-- Android (API 24+)
+> The text below is reproduced from [`https://github.com/rayon-rs/rayon`](https://github.com/rayon-rs/rayon). It is the upstream project's own description and remains under the upstream authors' authorship; links have been rewritten to absolute upstream URLs where appropriate so they continue to resolve from this repository.
 
-## Installation
+# Rayon
 
-Once published:
+[![Rayon crate](https://img.shields.io/crates/v/rayon.svg)](https://crates.io/crates/rayon)
+[![Rayon documentation](https://docs.rs/rayon/badge.svg)](https://docs.rs/rayon)
+![minimum rustc 1.59](https://img.shields.io/badge/rustc-1.59+-red.svg)
+[![build status](https://github.com/rayon-rs/rayon/workflows/master/badge.svg)](https://github.com/rayon-rs/rayon/actions)
+[![Join the chat at https://gitter.im/rayon-rs/Lobby](https://badges.gitter.im/rayon-rs/Lobby.svg)](https://gitter.im/rayon-rs/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-```kotlin
-dependencies {
-    implementation("io.github.kotlinmania:rayon-kotlin:0.1.0-SNAPSHOT")
+Rayon is a data-parallelism library for Rust. It is extremely
+lightweight and makes it easy to convert a sequential computation into
+a parallel one. It also guarantees data-race freedom. (You may also
+enjoy [this blog post][blog] about Rayon, which gives more background
+and details about how it works, or [this video][video], from the Rust
+Belt Rust conference.) Rayon is
+[available on crates.io](https://crates.io/crates/rayon), and
+[API documentation is available on docs.rs](https://docs.rs/rayon).
+
+[blog]: https://smallcultfollowing.com/babysteps/blog/2015/12/18/rayon-data-parallelism-in-rust/
+[video]: https://www.youtube.com/watch?v=gof_OEv71Aw
+
+## Parallel iterators and more
+
+Rayon makes it drop-dead simple to convert sequential iterators into
+parallel ones: usually, you just change your `foo.iter()` call into
+`foo.par_iter()`, and Rayon does the rest:
+
+```rust
+use rayon::prelude::*;
+fn sum_of_squares(input: &[i32]) -> i32 {
+    input.par_iter() // <-- just change that!
+         .map(|&i| i * i)
+         .sum()
 }
 ```
 
-## Build
+[Parallel iterators] take care of deciding how to divide your data
+into tasks; it will dynamically adapt for maximum performance. If you
+need more flexibility than that, Rayon also offers the [join] and
+[scope] functions, which let you create parallel tasks on your own.
+For even more control, you can create [custom threadpools] rather than
+using Rayon's default, global threadpool.
+
+[Parallel iterators]: https://docs.rs/rayon/*/rayon/iter/index.html
+[join]: https://docs.rs/rayon/*/rayon/fn.join.html
+[scope]: https://docs.rs/rayon/*/rayon/fn.scope.html
+[custom threadpools]: https://docs.rs/rayon/*/rayon/struct.ThreadPool.html
+
+## No data races
+
+You may have heard that parallel execution can produce all kinds of
+crazy bugs. Well, rest easy. Rayon's APIs all guarantee **data-race
+freedom**, which generally rules out most parallel bugs (though not
+all). In other words, **if your code compiles**, it typically does the
+same thing it did before.
+
+For the most, parallel iterators in particular are guaranteed to
+produce the same results as their sequential counterparts. One caveat:
+If your iterator has side effects (for example, sending methods to
+other threads through a [Rust channel] or writing to disk), those side
+effects may occur in a different order. Note also that, in some cases,
+parallel iterators offer alternative versions of the sequential
+iterator methods that can have higher performance.
+
+[Rust channel]: https://doc.rust-lang.org/std/sync/mpsc/fn.channel.html
+
+## Using Rayon
+
+[Rayon is available on crates.io](https://crates.io/crates/rayon). The
+recommended way to use it is to add a line into your Cargo.toml such
+as:
+
+```toml
+[dependencies]
+rayon = "1.7"
+```
+
+To use the parallel iterator APIs, a number of traits have to be in
+scope. The easiest way to bring those things into scope is to use the
+[Rayon prelude](https://docs.rs/rayon/*/rayon/prelude/index.html). In
+each module where you would like to use the parallel iterator APIs,
+just add:
+
+```rust
+use rayon::prelude::*;
+```
+
+Rayon currently requires `rustc 1.59.0` or greater.
+
+### Usage with WebAssembly
+
+Rayon can work on the Web via WebAssembly, but requires an adapter and
+some project configuration to account for differences between
+WebAssembly threads and threads on the other platforms.
+
+Check out the
+[wasm-bindgen-rayon](https://github.com/GoogleChromeLabs/wasm-bindgen-rayon)
+docs for more details.
+
+## Contribution
+
+Rayon is an open source project! If you'd like to contribute to Rayon,
+check out
+[the list of "help wanted" issues](https://github.com/rayon-rs/rayon/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22).
+These are all (or should be) issues that are suitable for getting
+started, and they generally include a detailed set of instructions for
+what to do. Please ask questions if anything is unclear! Also, check
+out the
+[Guide to Development](https://github.com/rayon-rs/rayon/wiki/Guide-to-Development)
+page on the wiki. Note that all code submitted in PRs to Rayon is
+assumed to
+[be licensed under Rayon's dual MIT/Apache 2.0 licensing](https://github.com/rayon-rs/rayon/blob/master/README.md#license).
+
+## Quick demo
+
+To see Rayon in action, check out the `rayon-demo` directory, which
+includes a number of demos of code using Rayon. For example, run this
+command to get a visualization of an N-body simulation. To see the
+effect of using Rayon, press `s` to run sequentially and `p` to run in
+parallel.
+
+```text
+> cd rayon-demo
+> cargo run --release -- nbody visualize
+```
+
+For more information on demos, try:
+
+```text
+> cd rayon-demo
+> cargo run --release -- --help
+```
+
+## Other questions?
+
+See [the Rayon FAQ][faq].
+
+[faq]: https://github.com/rayon-rs/rayon/blob/master/FAQ.md
+
+## License
+
+Rayon is distributed under the terms of both the MIT license and the
+Apache License (Version 2.0). See [LICENSE-APACHE](LICENSE-APACHE) and
+[LICENSE-MIT](LICENSE-MIT) for details. Opening a pull request is
+assumed to signal agreement with these licensing terms.
+
+---
+
+## About this Kotlin port
+
+### Installation
+
+```kotlin
+dependencies {
+    implementation("io.github.kotlinmania:rayon-kotlin:0.1.0")
+}
+```
+
+### Building
 
 ```bash
 ./gradlew build
 ./gradlew test
 ```
 
-## Porting guidelines
+### Targets
 
-See [CLAUDE.md](CLAUDE.md) and [AGENTS.md](AGENTS.md) for translator discipline, port-lint header convention, and Rust → Kotlin idiom mapping.
+- macOS arm64
+- Linux x64
+- Windows mingw-x64
+- iOS arm64 / simulator-arm64 (Swift export + XCFramework)
+- JS (browser + Node.js)
+- Wasm-JS (browser + Node.js)
+- Android (API 24+)
 
-## License
+### Porting guidelines
 
-Apache 2.0 — see [LICENSE](LICENSE).
+See [AGENTS.md](AGENTS.md) and [CLAUDE.md](CLAUDE.md) for translator discipline, port-lint header convention, and Rust → Kotlin idiom mapping.
 
-Original work copyrighted by the upstream `rayon` authors. Kotlin port copyright (c) 2026 Sydney Renee and The Solace Project.
+### License
+
+This Kotlin port is distributed under the same license terms as the upstream [`rayon`](https://github.com/rayon-rs/rayon). See [LICENSE](LICENSE) (and any sibling `LICENSE-*` / `NOTICE` files mirrored from upstream) for the full text.
+
+Original work copyrighted by the rayon authors.  
+Kotlin port: Copyright (c) 2026 Sydney Renee and The Solace Project.
+
+### Acknowledgments
+
+Thanks to the [`rayon`](https://github.com/rayon-rs/rayon) maintainers and contributors for the original Rust implementation. This port reproduces their work in Kotlin Multiplatform; bug reports about upstream design or behavior should go to the upstream repository.
