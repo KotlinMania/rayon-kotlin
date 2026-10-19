@@ -171,7 +171,7 @@ assumed to signal agreement with these licensing terms.
 
 ```kotlin
 dependencies {
-    implementation("io.github.kotlinmania:rayon-kotlin:0.1.0")
+    implementation("io.github.kotlinmania:rayon-kotlin:1.7.1")
 }
 ```
 
