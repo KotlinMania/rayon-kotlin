@@ -6,6 +6,35 @@ import kotlin.test.assertTrue
 
 class ThreadPoolTest {
     @Test
+    fun testThreadPoolScopeRunsOnce() {
+        var starts = 0
+        var operations = 0
+        var spawned = 0
+        val pool =
+            ThreadPoolBuilder
+                .new()
+                .numThreads(1)
+                .startHandler { index ->
+                    assertEquals(0, index)
+                    starts++
+                    assertEquals(1, starts)
+                }.build()
+                .unwrap()
+
+        val result =
+            pool.scope { scope ->
+                operations++
+                scope.spawn { spawned++ }
+                42
+            }
+
+        assertEquals(42, result)
+        assertEquals(1, starts)
+        assertEquals(1, operations)
+        assertEquals(1, spawned)
+    }
+
+    @Test
     fun testThreadPoolBuild() {
         val pool =
             ThreadPoolBuilder

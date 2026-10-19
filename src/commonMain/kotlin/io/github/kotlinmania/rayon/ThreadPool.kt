@@ -40,7 +40,8 @@ public class ThreadPool internal constructor(
 
     public fun <R> scope(op: (Scope) -> R): R {
         startHandler?.invoke(0)
-        return scope(op)
+        return io.github.kotlinmania.rayon
+            .scope(op)
     }
 
     public fun <A, B> join(operA: () -> A, operB: () -> B): Pair<A, B> {
