@@ -3,7 +3,9 @@ package io.github.kotlinmania.rayon
 /**
  * Error returned when building a [ThreadPool] fails.
  */
-public class ThreadPoolBuildError(override val message: String) : Exception(message)
+public class ThreadPoolBuildError(
+    override val message: String,
+) : Exception(message)
 
 /**
  * Result wrapper for [ThreadPoolBuilder.build] supporting Rust-like `expect` and `unwrap`.
@@ -13,6 +15,7 @@ public class ThreadPoolBuildResult(
     private val error: ThreadPoolBuildError? = null,
 ) {
     public fun isOk(): Boolean = pool != null
+
     public fun isErr(): Boolean = error != null
 
     public fun unwrap(): ThreadPool = pool ?: throw (error ?: ThreadPoolBuildError("ThreadPool build failed"))
@@ -37,7 +40,7 @@ public class ThreadPool internal constructor(
 
     public fun <R> scope(op: (Scope) -> R): R {
         startHandler?.invoke(0)
-        return io.github.kotlinmania.rayon.scope(op)
+        return scope(op)
     }
 
     public fun <A, B> join(operA: () -> A, operB: () -> B): Pair<A, B> {
