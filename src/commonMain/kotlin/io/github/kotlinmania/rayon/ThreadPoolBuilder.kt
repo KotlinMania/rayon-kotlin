@@ -40,6 +40,8 @@ public class ThreadPoolBuilder {
         return ThreadPoolBuildResult(ThreadPool(threads, startHandler))
     }
 
+    public fun buildGlobal(): ThreadPoolBuildResult = build()
+
     public companion object {
         public fun new(): ThreadPoolBuilder = ThreadPoolBuilder()
     }
